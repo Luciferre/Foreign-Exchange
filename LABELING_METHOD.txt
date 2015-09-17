@@ -1,0 +1,12 @@
+The format of the result is:
+time, max bid, min bid, mean bid, spread, lable
+
+The time is the minute of day, which can be used for time align. And it can also be a factor of price.
+
+The max, min and mean bid are generated in a 5-minute window before this record. 
+I choose 5-minute window because 1-minute window is too small, which will cause price changing too fast. So the 5-minute window should be more effective for later use.
+
+The spread is the difference between the bid and ask. The movement of spread can also predict the direction.
+
+The lable is either 1 or 0. 
+1 means this record'a bid is bigger than or equal with the previous one, and 0 means a smaller bid price compared to the last record.
