@@ -1,4 +1,4 @@
-package PrepareData;
+package preparedata;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -47,16 +47,21 @@ public class FeatureBuilder {
 		}
 	}
 
-	public float compute(int index, int minutes, float lastBid) {
+	public void compute(int index, int minutes) {
 		float max = Float.MIN_VALUE;
 		float min = Float.MAX_VALUE;
 		float bidMean = 0, spread = 0, askMean = 0, range = 0, diff = 0;
-		int lable = 0;
+		float last = 0;
+		int lable = 1;
 		ArrayList<String> base = data.get(index);
 		ArrayList<Float> newBase = new ArrayList<>();
 		DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyyMMdd HH:mm:ss.SSS");
 		DateTime baseDateTime = formatter.parseDateTime(base.get(0));
 		DateTime previousDateTime = baseDateTime.minusMinutes(minutes);
+
+		float bid = Float.parseFloat(base.get(1));
+		float ask = Float.parseFloat(base.get(2));
+		spread = ask - bid;
 
 		int count = 0;
 		for (int i = index; i >= 0; i--) {
@@ -68,9 +73,8 @@ public class FeatureBuilder {
 			float tmpbid = Float.parseFloat(tmpList.get(1));
 			float tmpask = Float.parseFloat(tmpList.get(2));
 			if (i == index)
-				diff = tmpbid;
-			if (i == 0)
-				diff = diff - tmpbid;
+				last = tmpbid;
+				diff = last - tmpbid;
 			if (max < tmpbid)
 				max = tmpbid;
 			if (min > tmpbid)
@@ -79,16 +83,18 @@ public class FeatureBuilder {
 			askMean += tmpask;
 			count++;
 		}
-		float bid = Float.parseFloat(base.get(1));
-		float ask = Float.parseFloat(base.get(2));
 
-		spread = ask - bid;
-		if (lastBid != 0) {
-			if (bid >= lastBid)
+		for (int i = index; i < data.size(); i++) {
+			float newbid = Float.parseFloat(data.get(i).get(1));
+			if (newbid > bid) {
 				lable = 1;
-			else
+				break;
+			} else if (newbid < bid) {
 				lable = 0;
+				break;
+			}
 		}
+
 		// newBase.add((float) baseDateTime.getMinuteOfDay());
 		newBase.add(bidMean / count);
 		newBase.add(askMean / count);
@@ -98,7 +104,6 @@ public class FeatureBuilder {
 		newBase.add((float) lable);// The lable should be the last one
 
 		processedData.add(newBase);
-		return bid;
 	}
 
 	public void computeThreshhold() {
@@ -148,13 +153,14 @@ public class FeatureBuilder {
 				tmpBinary.add(1);
 			else
 				tmpBinary.add(0);
-			
+
 			tmpBinary.add(tmpBase.get(5).intValue());
 			binaryData.add(tmpBinary);
 		}
 	}
 
-	public void writeFile(String fileName) {
+	public void writeTrainFile(String fileName) {
+		int fileLine = (int) (binaryData.size() * 0.8);
 		File file = new File(fileName);
 		try {
 			// if file doesnt exists, then create it
@@ -164,15 +170,54 @@ public class FeatureBuilder {
 
 			FileWriter fw = new FileWriter(file.getAbsoluteFile());
 			BufferedWriter bw = new BufferedWriter(fw);
-			for (int i = 100; i < binaryData.size() - 1; i++) {// skip first 100
-															// records
+			bw.write("bidMean,askMean,diff,range,spread,lable\n");
+
+			for (int i = 0; i < fileLine; i++) {// skip first 100
+												// records
 				ArrayList<Integer> tmpArrayList = binaryData.get(i);
-				ArrayList<Integer> nextArrayList = binaryData.get(i + 1);
+				// ArrayList<Integer> nextArrayList = binaryData.get(i + 1);
 				for (int j = 0; j < tmpArrayList.size(); j++) {
 					if (j == 0)
 						bw.write("" + tmpArrayList.get(j));
-					else if (j == tmpArrayList.size() - 1)
-						bw.write("," + nextArrayList.get(j));
+					// else if (j == tmpArrayList.size() - 1)
+					// bw.write("," + nextArrayList.get(j));
+					else
+						bw.write("," + tmpArrayList.get(j));
+
+				}
+
+				bw.write("\n");
+
+			}
+			bw.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	public void writeTestFile(String fileName) {
+		int index = (int) (binaryData.size() * 0.8);
+
+		File file = new File(fileName);
+		try {
+			// if file doesnt exists, then create it
+			if (!file.exists()) {
+				file.createNewFile();
+			}
+
+			FileWriter fw = new FileWriter(file.getAbsoluteFile());
+			BufferedWriter bw = new BufferedWriter(fw);
+			bw.write("bidMean,askMean,diff,range,spread,lable\n");
+			for (int i = index; i < binaryData.size(); i++) {// skip first 100
+																// records
+				ArrayList<Integer> tmpArrayList = binaryData.get(i);
+				// ArrayList<Integer> nextArrayList = binaryData.get(i + 1);
+				for (int j = 0; j < tmpArrayList.size(); j++) {
+					if (j == 0)
+						bw.write("" + tmpArrayList.get(j));
+					// else if (j == tmpArrayList.size() - 1)
+					// bw.write("," + nextArrayList.get(j));
 					else
 						bw.write("," + tmpArrayList.get(j));
 
@@ -192,16 +237,16 @@ public class FeatureBuilder {
 		FeatureBuilder buildFeature = new FeatureBuilder();
 		buildFeature.readFile("sample.csv");
 		int count = 0;
-		float lastBid = 0;
 		for (int i = 0; i < data.size(); i++) {
-			lastBid = buildFeature.compute(i, 5, lastBid);
+			buildFeature.compute(i, 5);
 			if (count % 100 == 0)
 				System.out.println(count);
 			count++;
 		}
 		buildFeature.computeThreshhold();
 		buildFeature.buildBinaryLable();
-		buildFeature.writeFile("result.csv");
+		buildFeature.writeTrainFile("train.csv");
+		buildFeature.writeTestFile("test.csv");
 
 	}
 }
