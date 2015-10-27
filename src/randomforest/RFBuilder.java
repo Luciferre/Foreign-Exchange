@@ -10,6 +10,10 @@ import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import com.datastax.driver.core.ResultSet;
+import com.datastax.driver.core.Row;
+
+import cassandra.CassandraConnector;
 import decisiontree.DTBuilder;
 
 //This is a builder of random forest
@@ -29,6 +33,9 @@ public class RFBuilder {
 
 	// the list of errorRate
 	private ArrayList<Float> accuracies;
+
+	// cassanddra connector
+	CassandraConnector connector = new CassandraConnector();
 
 	public RFBuilder(int numOfTrees) {
 		this.numOfTrees = numOfTrees;
@@ -63,6 +70,31 @@ public class RFBuilder {
 			e.printStackTrace();
 		}
 
+	}
+
+	// read records from database
+	public void readFromDatabase() {
+		// initialize feature
+		features.add("bidMean");
+		features.add("askMean");
+		features.add("diff");
+		features.add("range");
+		features.add("spread");
+		features.add("lable");
+
+		connector.connect();
+		String command = "select * from train";
+		ResultSet results = connector.getSession().execute(command);
+		for (Row row : results) {
+			ArrayList<Integer> arrayList = new ArrayList<>();
+			for (int i = 1; i < 7; i++) {
+				if (row.getBool(i))
+					arrayList.add(1);
+				else
+					arrayList.add(0);
+			}
+			allData.add(arrayList);
+		}
 	}
 
 	// train the forest
@@ -167,6 +199,17 @@ public class RFBuilder {
 		}
 	}
 
+	// save performance metrics to cassandra
+	public void saveAccuracyList() {
+		for (int i = 0; i < accuracies.size(); i++) {
+			String command = String.format("INSERT INTO performance (number, accuracy) VALUES (%d, %f)", i + 1,
+					accuracies.get(i));
+			connector.getSession().execute(command);
+		}
+		connector.close();
+
+	}
+
 	// serialize automotive object and save to file
 	public void serializeForest() {
 		try {
@@ -199,9 +242,11 @@ public class RFBuilder {
 
 	public static void main(String args[]) {
 		RFBuilder rfBuilder = new RFBuilder(100);
-		rfBuilder.readFile("train.csv");
+		// rfBuilder.readFile("train.csv");
+		rfBuilder.readFromDatabase();
 		rfBuilder.train();
-		rfBuilder.printAccuracyList();
+		// rfBuilder.printAccuracyList();
+		rfBuilder.saveAccuracyList();
 		rfBuilder.serializeForest();
 	}
 }

@@ -5,9 +5,10 @@ public class Test {
 	// records
 	public static void main(String args[]) {
 		RFBuilder rfBuilder = new RFBuilder(1000);
-		rfBuilder.readFile("test.csv");
+		// rfBuilder.readFile("test.csv");
+		rfBuilder.readFromDatabase();
 		rfBuilder.deserializeForest();
-		System.out.println("Accuracy: " + (1 - rfBuilder.test(rfBuilder.getAllData())));
+		System.out.println("Accuracy of 100 trees: " + (1 - rfBuilder.test(rfBuilder.getAllData())));
 
 	}
 }
