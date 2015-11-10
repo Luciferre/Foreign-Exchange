@@ -1,17 +1,23 @@
 package randomforest;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import org.apache.commons.io.FileUtils;
+
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
+import com.google.common.io.Files;
+import com.google.gson.Gson;
 
 import cassandra.CassandraConnector;
 import decisiontree.DTBuilder;
@@ -29,7 +35,16 @@ public class RFBuilder {
 	private int numOfTrees;
 
 	// the list of forest
-	private ArrayList<DTBuilder> forest;
+	// private ArrayList<DTBuilder> forest;
+	private class Forest {
+		private ArrayList<DTBuilder> trees;
+
+		public ArrayList<DTBuilder> getForest() {
+			return trees;
+		}
+	}
+
+	Forest forest = new Forest();
 
 	// the list of errorRate
 	private ArrayList<Float> accuracies;
@@ -42,7 +57,7 @@ public class RFBuilder {
 		this.features = new ArrayList<>();
 		this.allData = new ArrayList<>();
 		this.accuracies = new ArrayList<>();
-		this.forest = new ArrayList<>();
+		this.forest.trees = new ArrayList<>();
 	}
 
 	// read records from file
@@ -111,7 +126,7 @@ public class RFBuilder {
 
 			// train a decision tree
 			dtBuilder.train(trainData, featureLeft);
-			forest.add(dtBuilder);
+			forest.trees.add(dtBuilder);
 
 			// calculate error rate of the forest and persist data
 			float errRate = test(testData);
@@ -179,8 +194,8 @@ public class RFBuilder {
 		int numOfPosTree = 0;
 		int numOfNegTree = 0;
 
-		for (int i = 0; i < forest.size(); i++) {
-			int result = forest.get(i).getDecision(arrayList);
+		for (int i = 0; i < forest.trees.size(); i++) {
+			int result = forest.trees.get(i).getDecision(arrayList);
 			if (result == 1) {
 				numOfPosTree++;
 			} else {
@@ -213,8 +228,13 @@ public class RFBuilder {
 	// serialize automotive object and save to file
 	public void serializeForest() {
 		try {
-			ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream("RandomForest"));
-			out.writeObject(forest);
+			// ObjectOutputStream out = new ObjectOutputStream(new
+			// FileOutputStream("RandomForest"));
+			PrintWriter out = new PrintWriter("RandomForest.json");
+			Gson gson = new Gson();
+			String serializedForest = gson.toJson(forest);
+			out.print(serializedForest);
+			// out.writeObject(serializedForest);
 			out.close();
 		} catch (Exception e) {
 			System.out.print("Error:" + e);
@@ -228,8 +248,11 @@ public class RFBuilder {
 	public void deserializeForest() {
 		ObjectInputStream in;
 		try {
-			in = new ObjectInputStream(new FileInputStream("RandomForest"));
-			forest = (ArrayList<DTBuilder>) in.readObject();
+			String json = FileUtils.readFileToString(new File("RandomForest.json"));
+			// in = new ObjectInputStream(new FileInputStream("RandomForest"));
+			Gson gson = new Gson();
+			forest = gson.fromJson(json, Forest.class);
+			// forest = (ArrayList<DTBuilder>) in.readObject();
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
