@@ -5,9 +5,11 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.SortedMap;
 
-import org.apache.cassandra.db.IColumn;
 import org.apache.cassandra.hadoop.ColumnFamilyInputFormat;
+import org.apache.cassandra.hadoop.ColumnFamilyRecordReader.Column;
 import org.apache.cassandra.hadoop.ConfigHelper;
+import org.apache.cassandra.thrift.SlicePredicate;
+import org.apache.cassandra.thrift.SliceRange;
 import org.apache.cassandra.utils.ByteBufferUtil;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
@@ -19,7 +21,6 @@ import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
-
 import com.google.gson.Gson;
 
 import org.slf4j.Logger;
@@ -27,6 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import decisiontree.DTBuilder;
 
+@SuppressWarnings("deprecation")
 public class RandomForest extends Configured implements Tool {
 
 	private static final Logger logger = LoggerFactory.getLogger(RandomForest.class);
@@ -34,13 +36,14 @@ public class RandomForest extends Configured implements Tool {
 	static int numOfTree = 10;// number of trees
 
 	// Mapper to grow a tree separately
-	public static class GrowTreeMapper extends Mapper<ByteBuffer, SortedMap<ByteBuffer, IColumn>, Text, Text> {
+	public static class GrowTreeMapper extends Mapper<ByteBuffer, SortedMap<ByteBuffer, Column>, Text, Text> {
 
 		// The features of data
 		private ArrayList<String> features;
 
 		// initialize features
 		public void setup(Context context) throws IOException, InterruptedException {
+			features = new ArrayList<>();
 			features.add("bidMean");
 			features.add("askMean");
 			features.add("diff");
@@ -49,7 +52,7 @@ public class RandomForest extends Configured implements Tool {
 			features.add("lable");
 		}
 
-		public void map(ByteBuffer key, SortedMap<ByteBuffer, IColumn> columns, Context context)
+		public void map(ByteBuffer key, SortedMap<ByteBuffer, Column> columns, Context context)
 				throws IOException, InterruptedException {
 			// LongWritable index = new
 			// LongWritable(context.getTaskAttemptID().getTaskID().getId());
@@ -61,10 +64,10 @@ public class RandomForest extends Configured implements Tool {
 			randomSelectFeatures(featureLeft);
 
 			// read in training data
-			for (IColumn column : columns.values()) {
-				logger.debug("read " + key + ":" + column.name() + " from " + context.getInputSplit());
+			for (Column column : columns.values()) {
+				logger.debug("read " + key + ":" + column.name + " from " + context.getInputSplit());
 
-				String record = ByteBufferUtil.string(column.value());
+				String record = ByteBufferUtil.string(column.value);
 				String[] parts = record.split(",");
 				ArrayList<Integer> recordInt = new ArrayList<>();
 				for (int i = 0; i < parts.length; i++) {
@@ -108,6 +111,10 @@ public class RandomForest extends Configured implements Tool {
 		private class Forest {
 			private ArrayList<DTBuilder> trees;
 
+			public Forest() {
+				trees = new ArrayList<>();
+			}
+
 			public ArrayList<DTBuilder> getForest() {
 				return trees;
 			}
@@ -143,18 +150,16 @@ public class RandomForest extends Configured implements Tool {
 		job.setInputFormatClass(ColumnFamilyInputFormat.class);
 
 		ConfigHelper.setInputRpcPort(job.getConfiguration(), "9160");
-		ConfigHelper.setInputInitialAddress(job.getConfiguration(), "localhost");
+		ConfigHelper.setInputInitialAddress(job.getConfiguration(), "10.0.0.4");
 		ConfigHelper.setInputPartitioner(job.getConfiguration(), "org.apache.cassandra.dht.RandomPartitioner");
 		ConfigHelper.setInputColumnFamily(job.getConfiguration(), "bigdata", "train");
 		ConfigHelper.setRangeBatchSize(conf, 8000 / numOfTree); // Total 10
 																// trees
 
-		// SlicePredicate predicate = new SlicePredicate()
-		// .setSlice_range(new
-		// SliceRange().setStart(ByteBufferUtil.EMPTY_BYTE_BUFFER)
-		// .setFinish(ByteBufferUtil.EMPTY_BYTE_BUFFER).setCount(10000));
-		// ConfigHelper.setInputSlicePredicate(job.getConfiguration(),
-		// predicate);
+		SlicePredicate predicate = new SlicePredicate()
+				.setSlice_range(new SliceRange().setStart(ByteBufferUtil.EMPTY_BYTE_BUFFER)
+						.setFinish(ByteBufferUtil.EMPTY_BYTE_BUFFER).setCount(10000));
+		ConfigHelper.setInputSlicePredicate(job.getConfiguration(), predicate);
 
 		job.waitForCompletion(true);
 		return 0;
