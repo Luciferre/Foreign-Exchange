@@ -67,7 +67,7 @@ public class RandomForest extends Configured implements Tool {
 			for (Column column : columns.values()) {
 				logger.debug("read " + key + ":" + column.name + " from " + context.getInputSplit());
 
-				String record = ByteBufferUtil.string(column.value);
+				String record = ByteBufferUtil.string(column.name);
 				String[] parts = record.split(",");
 				ArrayList<Integer> recordInt = new ArrayList<>();
 				for (int i = 0; i < parts.length; i++) {

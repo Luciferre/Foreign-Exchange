@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.7"/>
+	<classpathentry kind="lib" path="/Users/Luciferre/Documents/workspace/BigData/joda-time-2.8.2.jar"/>
+	<classpathentry kind="lib" path="/Users/Luciferre/Documents/workspace/BigData/cassandra-driver-core-2.1.5.jar"/>
+	<classpathentry kind="lib" path="/Users/Luciferre/Documents/workspace/BigData/netty-3.9.0.Final.jar"/>
+	<classpathentry kind="lib" path="/Users/Luciferre/Documents/workspace/BigData/metrics-core-3.0.2.jar"/>
+	<classpathentry kind="lib" path="/Users/Luciferre/Documents/workspace/BigData/guava-18.0.jar"/>
+	<classpathentry kind="lib" path="/Users/Luciferre/Documents/workspace/BigData/slf4j-api-1.7.12.jar"/>
+	<classpathentry kind="lib" path="/Users/Luciferre/Documents/workspace/BigData/slf4j-simple-1.7.12-sources.jar"/>
+	<classpathentry kind="lib" path="/Users/Luciferre/Documents/workspace/BigData/cassandra-thrift-2.2.1.jar"/>
+	<classpathentry kind="lib" path="/Users/Luciferre/Documents/workspace/BigData/commons-logging-1.1.1.jar"/>
+	<classpathentry kind="lib" path="/Users/Luciferre/Documents/workspace/BigData/commons-lang3-3.3.2.jar"/>
+	<classpathentry kind="lib" path="/Users/Luciferre/Documents/workspace/BigData/commons-io-2.4.jar"/>
+	<classpathentry kind="lib" path="/Users/Luciferre/Documents/workspace/BigData/gson-2.3.1.jar"/>
+	<classpathentry kind="lib" path="/Users/Luciferre/Downloads/commons-cli-1.2.jar"/>
+	<classpathentry kind="lib" path="/Users/Luciferre/Downloads/commons-configuration-1.6.jar"/>
+	<classpathentry kind="lib" path="/Users/Luciferre/Downloads/libthrift-0.9.1.jar"/>
+	<classpathentry kind="lib" path="/Users/Luciferre/Documents/workspace/BigData/hadoop-core-1.2.1.jar"/>
+	<classpathentry kind="lib" path="/Users/Luciferre/Downloads/cassandra-all-2.2.0.jar"/>
+	<classpathentry kind="lib" path="/Users/Luciferre/Downloads/jamm-0.3.0.jar"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>

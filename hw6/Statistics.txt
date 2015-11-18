@@ -1,0 +1,2 @@
+The accuracy of 5 trees:
+0.5863364
