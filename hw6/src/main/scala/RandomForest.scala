@@ -1,5 +1,3 @@
-package spark
-
 import java.util.Calendar
 
 import com.datastax.spark.connector._
@@ -15,11 +13,11 @@ import org.apache.spark.{SparkConf, SparkContext}
 /**
  * Created by Luciferre on 11/16/15.
  */
-class RandomForest {
+object RandomForest {
   def main(args: Array[String]) {
 
     val jarFile = "RandomForest.jar";
-    val conf = new SparkConf().setAppName("Random Forest").setJars(Array(jarFile));
+    val conf = new SparkConf().setAppName("RandomForest").setJars(Array(jarFile));
     conf.set("spark.cassandra.connection.host", "localhost")
     val sc = new SparkContext(conf)
     val sqlContext = new SQLContext(sc)
@@ -41,12 +39,14 @@ class RandomForest {
     val testing = sqlContext.createDataFrame(testData)
 
 
+    val indexer = new StringIndexer().setInputCol("label").setOutputCol("indexedLabel")
+
     // Train a RandomForest model.
-    val randomForest = new RandomForestClassifier().setNumTrees(5)
+    val randomForest = new RandomForestClassifier().setNumTrees(5).setLabelCol("indexedLabel").setPredictionCol("predictedLabel")
 
     //Configure pipeline
     val pipeline = new Pipeline()
-      .setStages(Array(randomForest))
+      .setStages(Array(indexer, randomForest))
     // Fit the pipeline to training documents.
     val model = pipeline.fit(training)
 
@@ -57,11 +57,11 @@ class RandomForest {
     // compute test error
     val evaluator = new MulticlassClassificationEvaluator()
     val accuracy = evaluator.evaluate(predictions)
-    println("Test Error = " + (1.0 - accuracy))
+    println("Accuracy = " + (1.0 - accuracy))
 
     //save performance to cassandra
     val collection = sc.parallelize(Seq((Calendar.getInstance().getTime(), accuracy)))
-    collection.saveToCassandra("bigdata", "performance", SomeColumns("time", "precision"))
+    collection.saveToCassandra("bigdata", "performance", SomeColumns("time", "accuracy"))
 
   }
 }

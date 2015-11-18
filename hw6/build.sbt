@@ -1,4 +1,4 @@
-name := "Please"
+name := "RandomForest"
 
 version := "1.0"
 
@@ -10,4 +10,3 @@ libraryDependencies += "org.apache.spark" %% "spark-mllib" % "1.5.2"
 
 libraryDependencies += "com.datastax.spark" %% "spark-cassandra-connector" % "1.4.0-M3"
 
-mainClass in (Compile, run) := Some("RandomForest")
